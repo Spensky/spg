@@ -15,15 +15,14 @@ uniform	vec3 lightDir;
 uniform sampler2D diffuseTexture;
 uniform sampler2D specularTexture;
 uniform sampler2D shadowMap;
-
+uniform int nb_of_lights;
+vec3 rezultat;
 vec3 ambient;
 float ambientStrength = 0.2f;
 vec3 diffuse;
 vec3 specular;
 float specularStrength = 0.5f;
 float shininess = 64.0f;
-
-vec3 o;
 
 void computeLightComponents()
 {		
@@ -71,22 +70,100 @@ float computeShadow()
     return shadow;	
 }
 
+void directionalLight(){
+	vec3 cameraPosEye = vec3(0.0f);//in eye coordinates, the viewer is situated at the origin
+	
+	//transform normal
+	vec3 normalEye = normalize(normalMatrix * normal);	
+	
+	vec3 lightDirN = normalize(-lightDir); //global direction pointing towards the light source
+	
+	//compute view direction 
+	vec3 viewDirN = normalize(cameraPosEye - fragPosEye.xyz);
+	
+	//compute half vector
+	vec3 halfVector = normalize(lightDirN + viewDirN);
+		
+	//compute ambient light
+	ambient = ambientStrength * lightColor;
+	
+	//compute diffuse light
+	diffuse = max(dot(normalEye, lightDirN), 0.0f) * lightColor;
+	
+	//compute specular light
+	float specCoeff = pow(max(dot(halfVector, normalEye), 0.0f), shininess);
+	specular = specularStrength * specCoeff * lightColor;
+}
+
+
+float pointLightAtt(){
+	float constant = 1.0f;
+	float linear = 0.0045f;
+	float quadratic = 0.0075f;
+
+	//compute distance to light
+	float dist = length(lightDir -fragPosEye.xyz);
+	//compute attenuation
+	float att = 1.0f / (constant + linear * dist + quadratic * (dist * dist));
+	
+	vec3 cameraPosEye = vec3(0.0f);//in eye coordinates, the viewer is situated at the origin
+	
+	//transform normal
+	vec3 normalEye = normalize(normalMatrix * normal);	
+	
+	vec3 lightDirN = normalize(lightDir - fragPosEye.xyz); //global direction pointing towards the light source
+	
+	//compute view direction 
+	vec3 viewDirN = normalize(cameraPosEye - fragPosEye.xyz);
+	
+	//compute half vector
+	vec3 halfVector = normalize(lightDirN + viewDirN);
+		
+	//compute ambient light
+	ambient = ambientStrength * lightColor;
+	
+	//compute diffuse light
+	diffuse = max(dot(normalEye, lightDirN), 0.0f) * lightColor;
+	
+	//compute specular light
+	float specCoeff = pow(max(dot(halfVector, normalEye), 0.0f), shininess);
+	specular = specularStrength * specCoeff * lightColor;
+	
+	return att;
+}
+
+vec3 calculateOutput(int decizie){
+	
+	if(decizie == 1){//lumina directionala
+		ambient *= vec3(texture(diffuseTexture, fragTexCoords));
+		diffuse *= vec3(texture(diffuseTexture, fragTexCoords));
+		specular *= vec3(texture(specularTexture, fragTexCoords));
+	
+		vec3 color = min(ambient + diffuse + specular, 1.0f);
+		return color;
+	}else if(decizie == 2){//lumina point
+		float att = pointLightAtt();
+		ambient *= att * vec3(texture(diffuseTexture, fragTexCoords));
+		diffuse *= att * vec3(texture(diffuseTexture, fragTexCoords));
+		specular *= att * vec3(texture(specularTexture, fragTexCoords));
+	
+		vec3 color = min(ambient + diffuse + specular, 1.0f);
+		return color;
+	}
+	
+	return vec3(0.0f,0.0f,0.0f);
+}
+
+
 void main() 
 {
-	computeLightComponents();
+	directionalLight();
+	rezultat = calculateOutput(1);
+	for(int i = 0; i < 4;i++){
+		rezultat += calculateOutput(2);
+	}
+	//float shadow = computeShadow();
 	
-	float shadow = computeShadow();
-
-	//modulate with diffuse map
-	ambient *= vec3(texture(diffuseTexture, fragTexCoords));
-	diffuse *= vec3(texture(diffuseTexture, fragTexCoords));
-	//modulate woth specular map
-	specular *= vec3(texture(specularTexture, fragTexCoords));
-	
-	//modulate with shadow
-	vec3 color = min((ambient + (1.0f - shadow)*diffuse) + (1.0f - shadow)*specular, 1.0f);
-    
-    fColor = vec4(color, 1.0f);
-    //fColor = vec4(o, 1.0f);
+	fColor = vec4(rezultat,1.0f);
 }
 

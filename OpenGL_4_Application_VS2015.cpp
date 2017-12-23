@@ -29,12 +29,26 @@ std::vector<const GLchar*> faces;
 gps::SkyBox mySkyBox;
 gps::Shader skyboxShader;
 
-int glWindowWidth = 1024;
-int glWindowHeight = 720;
+int glWindowWidth = 1500;
+int glWindowHeight = 1000;
 int retina_width, retina_height;
 GLFWwindow* glWindow = NULL;
 
+//rezultie
 const GLuint SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
+
+//temporizare
+float deltaTime = 0.0f;
+float lastTime = 0.0f;
+
+int numberOfLights = 4;
+// pozitii lumini
+glm::vec3 LightPositions[] = {
+	glm::vec3(0.7f,  10.2f,  2.0f),
+	glm::vec3(2.3f, 10.3f, -4.0f),
+	glm::vec3(-4.0f, 10.0f, -12.0f),
+	glm::vec3(0.0f, 10.0f, -3.0f)
+};
 
 glm::mat4 model;
 GLuint modelLoc;
@@ -114,9 +128,10 @@ void windowResizeCallback(GLFWwindow* window, int width, int height)
 	glViewport(0, 0, retina_width, retina_height);
 }
 
+float x = 0;
 void processMovement()
 {
-
+		
 	if (pressedKeys[GLFW_KEY_Q]) {
 		angle += 0.1f;
 		if (angle > 360.0f)
@@ -130,22 +145,36 @@ void processMovement()
 	}
 
 	if (pressedKeys[GLFW_KEY_J]) {
+		myCustomShader.useShaderProgram();
+		x++;
+		lightDir = glm::vec3(0.0f, 20.0f, x);
+		lightDirLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightDir");
+		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDir));
 
-		lightAngle += 0.3f;
+
+		/*lightAngle += 0.3f;
 		if (lightAngle > 360.0f)
 			lightAngle -= 360.0f;
 		glm::vec3 lightDirTr = glm::vec3(glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(lightDir, 1.0f));
 		myCustomShader.useShaderProgram();
-		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDirTr));
+		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDirTr));*/
+		
+
 	}
 
 	if (pressedKeys[GLFW_KEY_L]) {
-		lightAngle -= 0.3f; 
+		myCustomShader.useShaderProgram();
+		x--;
+		lightDir = glm::vec3(0.0f, 20.0f, x);
+		lightDirLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightDir");
+		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDir));
+
+		/*lightAngle -= 0.3f; 
 		if (lightAngle < 0.0f)
 			lightAngle += 360.0f;
 		glm::vec3 lightDirTr = glm::vec3(glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(lightDir, 1.0f));
 		myCustomShader.useShaderProgram();
-		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDirTr));
+		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDirTr));*/
 	}	
 }
 
@@ -253,7 +282,7 @@ void initShaders()
 	lightShader.loadShader("shaders/lightCube.vert", "shaders/lightCube.frag");
 	depthMapShader.loadShader("shaders/simpleDepthMap.vert", "shaders/simpleDepthMap.frag");
 
-	mySkyBox.Load(faces);
+	mySkyBox.Load(faces);	
 	skyboxShader.loadShader("shaders/skyboxShader.vert", "shaders/skyboxShader.frag");
 	skyboxShader.useShaderProgram();
 	view = myCamera->getViewMatrix();
@@ -280,8 +309,9 @@ void initUniforms()
 	projectionLoc = glGetUniformLocation(myCustomShader.shaderProgram, "projection");
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));	
 
-	//set the light direction (direction towards the light)
-	lightDir = glm::vec3(0.0f, 1.0f, 2.0f);
+	
+	//pentru lumina directionala(soare)
+	lightDir = glm::vec3(1.0f, 1.0f, 1.0f);
 	lightDirLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightDir");
 	glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDir));
 
@@ -292,6 +322,22 @@ void initUniforms()
 
 	lightShader.useShaderProgram();
 	glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+	//pentru celelalte lumini punctiforme
+	for (int i=0; i < numberOfLights; ++i) {
+		lightDir = LightPositions[i];
+		lightDirLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightDir");
+		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDir));
+
+		//set light color
+		lightColor = glm::vec3(1.0f, 0.75f, 0.25f); //galben
+		lightColorLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightColor");
+		glUniform3fv(lightColorLoc, 1, glm::value_ptr(lightColor));
+
+		lightShader.useShaderProgram();
+		glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+	}
+	
 }
 
 void renderScene()
@@ -377,30 +423,22 @@ void renderScene()
 
 	myModel.Draw(myCustomShader);
 		
-	//create model matrix for ground
-	model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-	//send model matrix data to shader
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-
-	//create normal matrix
-	normalMatrix = glm::mat3(glm::inverseTranspose(view*model));
-	//send normal matrix data to shader
-	glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
-
-	ground.Draw(myCustomShader);
-
 	//draw a white cube around the light
 
-	lightShader.useShaderProgram();
+	for (int i = 0; i < numberOfLights; ++i) {
 
-	glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+		lightShader.useShaderProgram();
 
-	model = glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f));
-	model = glm::translate(model, lightDir);
-	model = glm::scale(model, glm::vec3(3.05f, 3.05f, 3.05f));
-	glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
+		glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
 
-	lightCube.Draw(lightShader);
+		model = glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::translate(model, LightPositions[i]);
+		model = glm::scale(model, glm::vec3(3.05f, 3.05f, 3.05f));
+		glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
+
+		lightCube.Draw(lightShader);
+	}
+	
 
 	mySkyBox.Draw(skyboxShader, view, projection);
 }
@@ -439,6 +477,13 @@ int main(int argc, const char * argv[]) {
 	initUniforms();	
 	glCheckError();
 	while (!glfwWindowShouldClose(glWindow)) {
+		float currentTime = glfwGetTime();
+		deltaTime = currentTime - lastTime;
+		lastTime = currentTime;
+		//printf("%d\n", deltaTime);
+		if (deltaTime > 10) {
+			
+		}
 		renderScene();
 		glfwSetKeyCallback(glWindow, keyboardCallback);
 		glfwSetCursorPosCallback(glWindow, mouseCallback);
