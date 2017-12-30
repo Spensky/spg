@@ -29,26 +29,31 @@ std::vector<const GLchar*> faces;
 gps::SkyBox mySkyBox;
 gps::Shader skyboxShader;
 
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+
 int glWindowWidth = 1500;
 int glWindowHeight = 1000;
 int retina_width, retina_height;
 GLFWwindow* glWindow = NULL;
 
-//rezultie
 const GLuint SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
 
-//temporizare
-float deltaTime = 0.0f;
-float lastTime = 0.0f;
-
-int numberOfLights = 4;
+float numberOfLights = 9;
 // pozitii lumini
 glm::vec3 LightPositions[] = {
-	glm::vec3(0.7f,  10.2f,  2.0f),
-	glm::vec3(2.3f, 10.3f, -4.0f),
-	glm::vec3(-4.0f, 10.0f, -12.0f),
-	glm::vec3(0.0f, 10.0f, -3.0f)
+	glm::vec3(18.0f, 7.0f,  12.0f),
+	glm::vec3(19.0f, 7.0f, 22.0f),
+	glm::vec3(-6.0f, 7.0f, 23.0f),
+	glm::vec3(-6.0f, 6.0f, 10.0f),
+	glm::vec3(-28.0f,6.0f,22.0f),
+	glm::vec3(13.0f,-16.0f,50.0f),
+	glm::vec3(-42.0f,6.0f,12.0f),
+	glm::vec3(-5.0f,6.0f,-18.0f),
+	glm::vec3(-16.0f,7.0f,-48.0f)
+
 };
+
 
 glm::mat4 model;
 GLuint modelLoc;
@@ -67,7 +72,12 @@ glm::vec3 lightColor;
 GLuint lightColorLoc;
 
 gps::Camera *myCamera = new gps::Camera(glm::vec3(10.0f, 10.0f, 2.5f), glm::vec3(0.0f, 10.0f, 10.0f));
+
 GLfloat cameraSpeed = 0.01f;
+//sun coords
+float sunX = 77.0f;
+float sunY = 110.0f;
+float sunZ = -49.0f;
 
 bool pressedKeys[1024];
 GLfloat angle;
@@ -128,11 +138,11 @@ void windowResizeCallback(GLFWwindow* window, int width, int height)
 	glViewport(0, 0, retina_width, retina_height);
 }
 
-float x = 0;
+
 void processMovement()
 {
-		
-	if (pressedKeys[GLFW_KEY_Q]) {
+
+	/*if (pressedKeys[GLFW_KEY_Q]) {
 		angle += 0.1f;
 		if (angle > 360.0f)
 			angle -= 360.0f;
@@ -144,38 +154,98 @@ void processMovement()
 			angle += 360.0f;
 	}
 
+	
+
 	if (pressedKeys[GLFW_KEY_J]) {
-		myCustomShader.useShaderProgram();
-		x++;
-		lightDir = glm::vec3(0.0f, 20.0f, x);
-		lightDirLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightDir");
-		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDir));
 
-
-		/*lightAngle += 0.3f;
+		lightAngle += 0.3f;
 		if (lightAngle > 360.0f)
 			lightAngle -= 360.0f;
 		glm::vec3 lightDirTr = glm::vec3(glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(lightDir, 1.0f));
 		myCustomShader.useShaderProgram();
+		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDirTr));
+	}
+
+	if (pressedKeys[GLFW_KEY_L]) {
+		lightAngle -= 0.3f; 
+		if (lightAngle < 0.0f)
+			lightAngle += 360.0f;
+		glm::vec3 lightDirTr = glm::vec3(glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(lightDir, 1.0f));
+		myCustomShader.useShaderProgram();
+		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDirTr));
+	}	*/
+
+	if (pressedKeys[GLFW_KEY_I]) {
+		myCustomShader.useShaderProgram();
+		lightDir = glm::vec3(sunX, sunY, sunZ++);
+		lightDirLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightDir");
+		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDir));
+	}
+
+	if (pressedKeys[GLFW_KEY_K]) {
+		myCustomShader.useShaderProgram();
+		lightDir = glm::vec3(sunX, sunY, sunZ--);
+		lightDirLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightDir");
+		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDir));
+	}
+
+	if (pressedKeys[GLFW_KEY_U]) {
+		myCustomShader.useShaderProgram();
+		lightDir = glm::vec3(sunX++, sunY, sunZ);
+		lightDirLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightDir");
+		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDir));
+
+	}
+
+	if (pressedKeys[GLFW_KEY_J]) {
+		myCustomShader.useShaderProgram();
+		lightDir = glm::vec3(sunX--, sunY, sunZ);
+		lightDirLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightDir");
+		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDir));
+		/*myCustomShader.useShaderProgram();
+		x++;
+		lightDir = glm::vec3(0.0f, 20.0f, x);
+		lightDirLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightDir");
+		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDir));*/
+
+
+		/*lightAngle += 0.3f;
+		if (lightAngle > 360.0f)
+		lightAngle -= 360.0f;
+		glm::vec3 lightDirTr = glm::vec3(glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(lightDir, 1.0f));
+		myCustomShader.useShaderProgram();
 		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDirTr));*/
-		
+
+
+	}
+
+	if (pressedKeys[GLFW_KEY_O]) {
+		myCustomShader.useShaderProgram();
+		lightDir = glm::vec3(sunX, sunY++, sunZ);
+		lightDirLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightDir");
+		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDir));
 
 	}
 
 	if (pressedKeys[GLFW_KEY_L]) {
 		myCustomShader.useShaderProgram();
+		lightDir = glm::vec3(sunX, sunY--, sunZ);
+		lightDirLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightDir");
+		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDir));
+		/*	myCustomShader.useShaderProgram();
 		x--;
 		lightDir = glm::vec3(0.0f, 20.0f, x);
 		lightDirLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightDir");
-		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDir));
+		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDir));*/
 
-		/*lightAngle -= 0.3f; 
+		/*lightAngle -= 0.3f;
 		if (lightAngle < 0.0f)
-			lightAngle += 360.0f;
+		lightAngle += 360.0f;
 		glm::vec3 lightDirTr = glm::vec3(glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(lightDir, 1.0f));
 		myCustomShader.useShaderProgram();
 		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDirTr));*/
-	}	
+	}
+
 }
 
 bool initOpenGLWindow()
@@ -216,8 +286,6 @@ bool initOpenGLWindow()
 	//for RETINA display
 	glfwGetFramebufferSize(glWindow, &retina_width, &retina_height);
 
-	//glfwSetKeyCallback(glWindow, keyboardCallback);
-	//glfwSetCursorPosCallback(glWindow, mouseCallback);
     //glfwSetInputMode(glWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	return true;
@@ -249,7 +317,8 @@ void initFBOs()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
+	//float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	//glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 	//attach texture to FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMapTexture, 0);
@@ -260,11 +329,12 @@ void initFBOs()
 
 glm::mat4 computeLightSpaceTrMatrix()
 {
-	const GLfloat near_plane = 1.0f, far_plane = 10.0f;
-	glm::mat4 lightProjection = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, near_plane, far_plane);
+	const GLfloat near_plane = 1.0f, far_plane = 500.0f;
+	glm::mat4 lightProjection = glm::ortho(-50.0f, 50.0f, -50.0f, 50.0f, near_plane, far_plane);
+	projection = glm::perspective(glm::radians(45.0f), (float)retina_width / (float)retina_height, 0.1f, 1000.0f);
 
 	glm::vec3 lightDirTr = glm::vec3(glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(lightDir, 1.0f));
-	glm::mat4 lightView = glm::lookAt(lightDirTr, myCamera->getCameraTarget(), glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 lightView = glm::lookAt(lightDir, myCamera->getCameraTarget(), glm::vec3(0.0f, 1.0f, 0.0f));
 
 	return lightProjection * lightView;
 }
@@ -272,7 +342,7 @@ glm::mat4 computeLightSpaceTrMatrix()
 void initModels()
 {
 	myModel = gps::Model3D("objects/modelScene.obj", "objects/");
-	ground = gps::Model3D("objects/ground/ground.obj", "objects/ground/");
+	//ground = gps::Model3D("objects/ground/ground.obj", "objects/ground/");
 	lightCube = gps::Model3D("objects/cube/cube.obj", "objects/cube/");
 }
 
@@ -282,7 +352,7 @@ void initShaders()
 	lightShader.loadShader("shaders/lightCube.vert", "shaders/lightCube.frag");
 	depthMapShader.loadShader("shaders/simpleDepthMap.vert", "shaders/simpleDepthMap.frag");
 
-	mySkyBox.Load(faces);	
+	mySkyBox.Load(faces);
 	skyboxShader.loadShader("shaders/skyboxShader.vert", "shaders/skyboxShader.frag");
 	skyboxShader.useShaderProgram();
 	view = myCamera->getViewMatrix();
@@ -293,7 +363,7 @@ void initShaders()
 	glm::value_ptr(projection));
 }
 
-void initUniforms()
+void initUniforms()	
 {
 	myCustomShader.useShaderProgram();
 
@@ -309,13 +379,13 @@ void initUniforms()
 	projectionLoc = glGetUniformLocation(myCustomShader.shaderProgram, "projection");
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));	
 
-	
-	//pentru lumina directionala(soare)
-	lightDir = glm::vec3(1.0f, 1.0f, 1.0f);
+	glUniform3fv(glGetUniformLocation(myCustomShader.shaderProgram, "cameraPosEye"), 1, glm::value_ptr(myCamera->getCameraPosition()));
+	//lumina soare
+	lightDir = glm::vec3(sunX, sunY, sunZ);//77 max 110.0f -49.0f min279x
 	lightDirLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightDir");
 	glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDir));
 
-	//set light color
+	//culoare
 	lightColor = glm::vec3(1.0f, 1.0f, 1.0f); //white light
 	lightColorLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightColor");
 	glUniform3fv(lightColorLoc, 1, glm::value_ptr(lightColor));
@@ -323,33 +393,36 @@ void initUniforms()
 	lightShader.useShaderProgram();
 	glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
+	//myCustomShader.useShaderProgram();
 	//pentru celelalte lumini punctiforme
-	for (int i=0; i < numberOfLights; ++i) {
-		lightDir = LightPositions[i];
-		lightDirLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightDir");
-		glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDir));
+	//for (int i=0; i < numberOfLights; ++i) {
+	//	lightDir = LightPositions[i];
+	//	lightDirLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightDir");
+	//	glUniform3fv(lightDirLoc, 1, glm::value_ptr(lightDir));
 
-		//set light color
-		lightColor = glm::vec3(1.0f, 0.75f, 0.25f); //galben
-		lightColorLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightColor");
-		glUniform3fv(lightColorLoc, 1, glm::value_ptr(lightColor));
+	//	//set light color
+	//	lightColor = glm::vec3(1.0f, 0.75f, 0.25f); //galben
+	//	lightColorLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightColor");
+	//	glUniform3fv(lightColorLoc, 1, glm::value_ptr(lightColor));
 
-		lightShader.useShaderProgram();
-		glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-	}
-	
+	//	lightShader.useShaderProgram();
+	//	glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+	//}
+
 }
 
 void renderScene()
 {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	
 
 	processMovement();	
 
 	//render the scene to the depth buffer (first pass)
-
+	
 	depthMapShader.useShaderProgram();
-
+	glCullFace(GL_FRONT);
+	
 	glUniformMatrix4fv(glGetUniformLocation(depthMapShader.shaderProgram, "lightSpaceTrMatrix"),
 		1,
 		GL_FALSE,
@@ -359,7 +432,7 @@ void renderScene()
 	glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFBO);
 	glClear(GL_DEPTH_BUFFER_BIT);
 	
-	//create model matrix 
+	//create model matrix for nanosuit
 	model = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0, 1, 0));
 	//send model matrix to shader
 	glUniformMatrix4fv(glGetUniformLocation(depthMapShader.shaderProgram, "model"),
@@ -369,20 +442,10 @@ void renderScene()
 
 	myModel.Draw(depthMapShader);
 
-	//create model matrix for ground
-	model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-	//send model matrix to shader
-	glUniformMatrix4fv(glGetUniformLocation(depthMapShader.shaderProgram, "model"), 
-						1, 
-						GL_FALSE, 
-						glm::value_ptr(model));
-
-	ground.Draw(depthMapShader);
-
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+	glCullFace(GL_BACK);
 	//render the scene (second pass)
-
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	myCustomShader.useShaderProgram();
 
 	//send lightSpace matrix to shader
@@ -404,6 +467,7 @@ void renderScene()
 	glUniformMatrix3fv(lightDirMatrixLoc, 1, GL_FALSE, glm::value_ptr(lightDirMatrix));
 
 	glViewport(0, 0, retina_width, retina_height);
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	myCustomShader.useShaderProgram();
 
 	//bind the depth map
@@ -411,7 +475,7 @@ void renderScene()
 	glBindTexture(GL_TEXTURE_2D, depthMapTexture);
 	glUniform1i(glGetUniformLocation(myCustomShader.shaderProgram, "shadowMap"), 3);
 	
-	//create model matrix 
+	//create model matrix for nanosuit
 	model = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::vec3(0, 1, 0));
 	//send model matrix data to shader	
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
@@ -425,7 +489,19 @@ void renderScene()
 		
 	//draw a white cube around the light
 
-	for (int i = 0; i < numberOfLights; ++i) {
+	lightShader.useShaderProgram();
+
+	glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+
+	model = glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+	model = glm::translate(model, lightDir);
+	model = glm::scale(model, glm::vec3(3.05f, 3.05f,3.05f));
+	glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
+	printf("X=%f, Y=%f, Z=%f\n", lightDir.x, lightDir.y, lightDir.z);
+	lightCube.Draw(lightShader);
+	
+
+	/*for (int i = 0; i < numberOfLights; ++i) {
 
 		lightShader.useShaderProgram();
 
@@ -433,12 +509,11 @@ void renderScene()
 
 		model = glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f));
 		model = glm::translate(model, LightPositions[i]);
-		model = glm::scale(model, glm::vec3(3.05f, 3.05f, 3.05f));
+		model = glm::scale(model, glm::vec3(1.05f, 1.05f, 1.05f));
 		glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
 		lightCube.Draw(lightShader);
-	}
-	
+	}*/
 
 	mySkyBox.Draw(skyboxShader, view, projection);
 }
@@ -477,13 +552,9 @@ int main(int argc, const char * argv[]) {
 	initUniforms();	
 	glCheckError();
 	while (!glfwWindowShouldClose(glWindow)) {
-		float currentTime = glfwGetTime();
-		deltaTime = currentTime - lastTime;
-		lastTime = currentTime;
-		//printf("%d\n", deltaTime);
-		if (deltaTime > 10) {
-			
-		}
+		float currentFrame = glfwGetTime();
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
 		renderScene();
 		glfwSetKeyCallback(glWindow, keyboardCallback);
 		glfwSetCursorPosCallback(glWindow, mouseCallback);
